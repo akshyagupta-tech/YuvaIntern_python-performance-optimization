@@ -1,14 +1,14 @@
 {
   "candidate": "Akshya Gupta",
   "internship_track": "YuvaIntern Junior Python Developer",
-  "baseline_runtime_sec": 1.3776,
-  "optimized_runtime_sec": 0.0318,
-  "overall_speedup_factor": "43.27x",
+  "baseline_runtime_sec": 1.4692,
+  "optimized_runtime_sec": 0.0301,
+  "overall_speedup_factor": "48.86x",
   "baseline_peak_mem_kb": 284.71,
   "optimized_peak_mem_kb": 0.0,
   "string_concatenation_analysis": {
-    "method_plus_equal_sec": 0.0029,
+    "method_plus_equal_sec": 0.0026,
     "method_join_sec": 0.0017,
-    "speedup": 1.7
+    "speedup": 1.5
   }
 }
