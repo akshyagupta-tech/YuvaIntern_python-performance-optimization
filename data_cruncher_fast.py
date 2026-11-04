@@ -1,67 +1,63 @@
-"""
-Enterprise Performance-Optimized Data Processing Engine
-Author: Akshya Gupta (YuvaIntern Junior Python Developer Track - Week 4)
-Features: O(N) Hash-Set Indices, Memory Buffer Allocation, Generator Streams
-"""
+"""Compatibility facade around the linear Week 4 processing engine."""
 
 from __future__ import annotations
-import io
-import time
-import random
-import tracemalloc
-from typing import List, Set, Tuple, Dict, Any
+
+from typing import Any
+
+from benchmarks import generate_workload
+from engine_optimized import concatenate_join, find_duplicates_linear
+from profiler import profile_callable
+
 
 class OptimizedDataEngine:
-    @staticmethod
-    def generate_workload(size: int = 10000, seed: int = 42) -> List[int]:
-        random.seed(seed)
-        return [random.randint(1, size // 2) for _ in range(size)]
+    """Expose the historical class API over the new optimized functions."""
 
     @staticmethod
-    def find_duplicates_linear(data: List[int]) -> List[int]:
-        """
-        O(N) single-pass duplicate detector using dual hash-sets.
-        Eliminates quadratic linear scans over unbounded arrays.
-        """
-        seen: Set[int] = set()
-        duplicates: Set[int] = set()
-        for item in data:
-            if item in seen:
-                duplicates.add(item)
-            else:
-                seen.add(item)
-        return list(duplicates)
+    def generate_workload(size: int = 10_000, seed: int = 42) -> list[int]:
+        """Generate numeric records at the legacy 50-percent duplicate rate."""
+        values = generate_workload(size, 0.5, kind="numeric", seed=seed)
+        return [int(value) for value in values]
 
     @staticmethod
-    def buffer_stream_concatenation(iterations: int = 25000) -> int:
-        """
-        Memory-efficient string aggregation using C-level preallocated str.join.
-        Avoids repeated immutable string buffer reallocations.
-        """
-        return len(",".join(str(i) for i in range(iterations)) + ",")
+    def find_duplicates_linear(data: list[Any]) -> list[Any]:
+        """Return unique duplicate values using a one-pass hash-set scan."""
+        return find_duplicates_linear(data)
+
+    @staticmethod
+    def buffer_stream_concatenation(iterations: int = 25_000) -> int:
+        """Return comma-separated output length using the optimized join path."""
+        if (
+            isinstance(iterations, bool)
+            or not isinstance(iterations, int)
+            or iterations < 0
+        ):
+            raise ValueError("iterations must be a non-negative integer")
+        joined = concatenate_join(str(index) for index in range(iterations))
+        return len(f"{joined},")
 
     @classmethod
-    def run_instrumented_pipeline(cls, data_size: int = 8000, str_iters: int = 20000) -> Dict[str, Any]:
-        tracemalloc.start()
-        start_time = time.perf_counter()
-
-        dataset = cls.generate_workload(size=data_size)
-        duplicates = cls.find_duplicates_linear(dataset)
-        str_len = cls.buffer_stream_concatenation(iterations=str_iters)
-
-        execution_duration = time.perf_counter() - start_time
-        current_mem, peak_mem = tracemalloc.get_traced_memory()
-        tracemalloc.stop()
-
+    def run_instrumented_pipeline(
+        cls,
+        data_size: int = 8_000,
+        str_iters: int = 20_000,
+    ) -> dict[str, Any]:
+        """Run and profile the optimized duplicate and string aggregation path."""
+        dataset = cls.generate_workload(data_size)
+        measurement = profile_callable(find_duplicates_linear, dataset)
+        string_length = cls.buffer_stream_concatenation(str_iters)
         return {
-            "duplicate_count": len(duplicates),
-            "string_buffer_length": str_len,
-            "duration_seconds": round(execution_duration, 5),
-            "peak_memory_kb": round(peak_mem / 1024, 2)
+            "duplicate_count": len(measurement.result),
+            "string_buffer_length": string_length,
+            "duration_seconds": round(measurement.wall_seconds, 6),
+            "cpu_seconds": round(measurement.cpu_seconds, 6),
+            "peak_memory_kb": round(measurement.peak_memory_bytes / 1024, 2),
+            "primitive_calls": measurement.primitive_calls,
+            "gc_collection_delta": measurement.gc_collection_delta,
         }
 
+
 if __name__ == "__main__":
-    metrics = OptimizedDataEngine.run_instrumented_pipeline()
+    pipeline_metrics = OptimizedDataEngine.run_instrumented_pipeline()
     print("[Engine Output] Optimized execution finished:")
-    for k, v in metrics.items():
-        print(f"  • {k}: {v}")
+    for metric, value in pipeline_metrics.items():
+        print(f"  {metric}: {value}")

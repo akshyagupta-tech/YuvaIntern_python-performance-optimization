@@ -1,40 +1,56 @@
-"""
-Legacy Inefficient Data Cruncher (Baseline)
-Author: Akshya Gupta (YuvaIntern Junior Python Developer - Week 4)
-Contains deliberate bottlenecks: O(N^2) searches, repeated list allocations, slow concatenation.
-"""
+"""Compatibility wrappers for the quadratic Week 4 reference engine."""
 
-import time
+from __future__ import annotations
+
 import random
+import time
+from collections.abc import Sequence
+from typing import Hashable, TypeVar
 
-def generate_dataset(size=20000):
-    random.seed(42)
-    return [random.randint(1, 10000) for _ in range(size)]
+from engine_baseline import concatenate_iterative, find_duplicates_quadratic
 
-def find_duplicates_slow(data):
-    # Bottleneck: O(N^2) complexity using nested list lookups
-    duplicates = []
-    for i in range(len(data)):
-        for j in range(i + 1, len(data)):
-            if data[i] == data[j] and data[i] not in duplicates:
-                duplicates.append(data[i])
-    return duplicates
+Value = TypeVar("Value", bound=Hashable)
 
-def aggregate_string_slow(iterations=30000):
-    # Bottleneck: Inefficient immutable string concatenation in loop
-    result = ""
-    for i in range(iterations):
-        result += str(i) + ","
-    return len(result)
 
-def process_pipeline():
-    start = time.perf_counter()
-    data = generate_dataset(5000)
-    dupes = find_duplicates_slow(data)
-    str_len = aggregate_string_slow(15000)
-    duration = time.perf_counter() - start
-    print(f"[Slow Pipeline] Found {len(dupes)} duplicates, String length: {str_len}, Elapsed: {duration:.4f}s")
+def generate_dataset(size: int = 20_000, seed: int = 42) -> list[int]:
+    """Return reproducible integer records without mutating global RNG state."""
+    if isinstance(size, bool) or not isinstance(size, int) or size < 0:
+        raise ValueError("size must be a non-negative integer")
+    generator = random.Random(seed)
+    return [generator.randint(1, 10_000) for _ in range(size)]
+
+
+def find_duplicates_slow(data: Sequence[Value]) -> list[Value]:
+    """Preserve the historical API while enforcing baseline safety limits."""
+    return find_duplicates_quadratic(data)
+
+
+def aggregate_string_slow(iterations: int = 30_000) -> int:
+    """Return the length produced by repeated string concatenation."""
+    if (
+        isinstance(iterations, bool)
+        or not isinstance(iterations, int)
+        or iterations < 0
+    ):
+        raise ValueError("iterations must be a non-negative integer")
+    return len(
+        concatenate_iterative(f"{index}," for index in range(iterations))
+    )
+
+
+def process_pipeline() -> float:
+    """Run the legacy 5k baseline pipeline with the reference time budget."""
+    started = time.perf_counter()
+    data = generate_dataset(5_000)
+    duplicates = find_duplicates_slow(data)
+    string_length = aggregate_string_slow(15_000)
+    duration = time.perf_counter() - started
+    print(
+        "[Slow Pipeline] Found {} duplicates, String length: {}, "
+        "Elapsed: {:.4f}s".format(len(duplicates), string_length, duration)
+    )
     return duration
+
 
 if __name__ == "__main__":
     process_pipeline()

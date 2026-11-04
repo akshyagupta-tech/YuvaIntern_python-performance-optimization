@@ -1,23 +1,46 @@
-# Enterprise Performance Optimization & Profiling (Week 4)
+# High-Throughput Algorithmic Benchmark & Profiling Engine
 
 **Intern:** Akshya Gupta  
 **Track:** YuvaIntern — Junior Python Developer  
 **Milestone:** Week 4 Task
 
 ## Overview
-Comprehensive system profiling and architectural refactoring eliminating quadratic bottlenecks ((N^2)$ to (N)$) and optimizing memory churn via preallocated C-buffers and tracemalloc instrumentation.
+The Week 4 project compares a deadline-bounded quadratic reference implementation
+with an average-linear hash-set pipeline. It includes reproducible synthetic
+workloads, warmup and trial statistics, wall/CPU timing, `tracemalloc`, `cProfile`,
+GC telemetry, streaming helpers, a cached digest utility, and JSON/CSV exports.
 
-## Key Optimizations
-1. **Algorithmic Complexity Reduction:** Replaced nested iteration duplicate discovery with a single-pass dual hash-set approach ((N)$ linear time).
-2. **Memory Churn Mitigation:** Replaced repeated dynamic reallocation of immutable string objects with preallocated generator-backed `str.join()`.
-3. **Telemetry & Instrumentation:** Integrated `cProfile`, `pstats`, and `tracemalloc` with structured telemetry serialization (`benchmark_telemetry.json`).
-4. **Verification & Correctness:** 100% equivalence asserted across algorithmic refactors via an automated test suite.
+## Modules
+- `engine_baseline.py`: O(N^2) reference algorithms with item and time guards.
+- `engine_optimized.py`: O(N) hash-set algorithms, lazy chunk helpers, join aggregation, and cached digests.
+- `profiler.py`: Wall/CPU timing, peak and differential allocations, GC churn, and cProfile rows.
+- `benchmarks.py`: Workload generation, parity verification, statistical trials, speedup and memory metrics, JSON/CSV export.
+- `performance_exceptions.py`: Context-carrying benchmark, allocation, and workload exceptions.
+- `test_performance.py`: Focused parity, safety, telemetry, workload, and regression tests.
+- `app.py`: Interactive Streamlit dashboard with size and duplicate-rate controls.
+- Legacy scripts and `core/week4_profiler.py` remain available for existing callers and lessons.
 
-## Execution & Verification
+## Setup
 ```bash
-# Run the complete profiling and benchmark suite
-python3 profiler_benchmark.py
+python3 -m pip install -r requirements.txt
+```
 
-# Run the correctness unit tests
-python3 -m unittest -v test_optimization_correctness.py
+## Run Tests
+```bash
+python3 -m unittest -v test_performance.py
+python3 -m unittest discover -v
+```
+
+## Run the Web Dashboard
+```bash
+streamlit run app.py
+```
+
+The dashboard defaults to five warmups and seven measured trials. The quadratic
+reference stops at its configured item clamp or time budget; larger workloads
+still report optimized measurements and identify the baseline as aborted.
+
+## Run a Command-Line Benchmark
+```bash
+python3 optimization_benchmark.py
 ```
